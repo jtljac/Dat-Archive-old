@@ -1,0 +1,9 @@
+{
+	"Encryption Key": "",				// Key used if files are encrypted, must not be blank if files should be encrypted
+	"FileDirectory": {
+		"DestDirectory":	"",			// The path inside the chunk used to fetch the file
+		"Chunk":			"",			// The chunk to store the file n
+		"Compress":			false,		// If true, compress the file
+		"Encrypt":			false		// If true, encrypt the file against the above key
+	},
+}

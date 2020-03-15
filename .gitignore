@@ -1,0 +1,57 @@
+# Visual Studio Files
+/.vs/
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Debug styff
+*.idb
+*.ilk
+*.pdb
+*.tlog
+*.log
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+#Compiled Directories
+/Release/
+/BuildTools/
+/Tools/
+/Executable/
+**/Run Tool Test/
+**/Debug/
+/Debug/
+**/x64/
+/x64
+/Output
+
+Keep the stuff in thirdparty
+!/ThirdParty/**
+ThirdParty/glm/glm/out/

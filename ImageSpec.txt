@@ -1,0 +1,12 @@
+File {
+	Header	Head
+	u8[][]	Data
+}
+
+Header {
+	u32 	Signiture		(Expected value: 0xB1444154, ±TEX)
+	u8 		version			(Expected value: 0x1, 1)
+	16		width
+	u16		height
+	u8		Colour Mode		()
+}

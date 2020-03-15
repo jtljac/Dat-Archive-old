@@ -1,0 +1,44 @@
+File {
+	Header	Head
+	u8[][]	Data	
+	Table	DataTable
+}
+
+Header {
+	u32 	Signiture		(Expected value: 0xB1444154, ±DAT)
+	u8 		version			(Expected value: 0x1, 1)
+	u32		TableOffset
+}
+
+Table {
+	u8		nameLength
+	u8		name[]			(Max 255 characters)
+	u8		fileDesc
+	u32		CRC32
+	u32		OriginalSize	(Original size of the data, before compression)
+	u32		dataStart
+	u32		dataEnd
+}
+
+fileDesc is split into 2 parts, first 6 bits are the filetype identifier (giving 64 different possible filetypes), the final 2 bits are the file flags
+
+Filetype identifier:
+	0:		Raw Text
+	1: 		Texture
+	2: 		Vertex Shader
+	3: 		Fragment Shader
+	4:		Sound
+
+File Flags:
+	[0]: 	Encrypted
+	[1]:	Compressed
+
+fileDesc:
+	[0]		Filetype identifier
+	[1]		Filetype identifier
+	[2]		Filetype identifier
+	[3]		Filetype identifier
+	[4]		Filetype identifier
+	[5]		Filetype identifier
+	[6]		File Flag Encrypted
+	[7]		File Flag Compressed
