@@ -44,6 +44,7 @@ public:
 
 		// Get the table offset
 		uint32_t tableOffset;
+
 		datFile.read(reinterpret_cast<char*>(&tableOffset), 4);
 		tableOffset = _byteswap_ulong(tableOffset);
 
