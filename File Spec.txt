@@ -5,7 +5,7 @@ File {
 }
 
 Header {
-	u32 	Signiture		(Expected value: 0xB1444154, ±DAT)
+	u32	 	Signiture		(Expected value: 0xB1444154, ±DAT)
 	u8 		version			(Expected value: 0x1, 1)
 	u32		TableOffset
 }
@@ -15,7 +15,7 @@ Table {
 	u8		name[]			(Max 255 characters)
 	u8		fileDesc
 	u32		CRC32
-	u32		OriginalSize	(Original size of the data, before compression)
+	u32		OriginalSize		(Original size of the data, before compression)
 	u32		dataStart
 	u32		dataEnd
 }
@@ -32,8 +32,8 @@ Filetype identifier:
 	6:		Script
 
 File Flags:
-	[0]: 	Encrypted
-	[1]:	Compressed
+	[0]: 		Encrypted
+	[1]:		Compressed
 
 fileDesc:
 	[0]		Filetype identifier
