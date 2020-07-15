@@ -1,5 +1,5 @@
 #pragma once
-#include "DatArchive/DatFileCommon.h"
+#include <Dat-Archive/DatArchive/DatArchiveCommon.h>
 
 class DatFile {
 	std::fstream datFile;
@@ -8,7 +8,7 @@ class DatFile {
 	
 public:
 	DatFile() {}
-	DatFile(std::string Path) {
+	DatFile(std::filesystem::path Path) {
 		openFile(Path);
 	}
 	~DatFile() {
@@ -19,7 +19,7 @@ public:
 	 * @param TheFile The directory of the file to open
 	 * @return whether archive was successfully opened
 	 */
-	bool openFile(std::string TheFile) {
+	bool openFile(std::filesystem::path TheFile) {
 		// Open file as a binary, ensure its a file
 		datFile.open(TheFile, std::ios::in | std::ios::binary);
 		if (!datFile) {
