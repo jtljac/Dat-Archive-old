@@ -154,11 +154,10 @@ public:
 	 * @param Buf A pointer to a pointer to the buffer where the file data will end up
 	 * @return the size of the file
 	 */
-	unsigned int getFile(std::string File, char** Buf) {
+	void getFile(std::string File, char** Buf, unsigned int& DataSize) {
 		// Check if the table actually contains the file
 		if (!fileTable.count(File)) {
 			std::cout << "Attempted to get file: " << File << ", but it doesn't exist" << std::endl;
-			return 0;
 		}
 		
 		// Get the table entry for the file, and work out where the data is
@@ -175,7 +174,7 @@ public:
 		// Generate and check the crc to make sure the data is valid
 		uint32_t genereatedCRC = crc32(0L, reinterpret_cast<unsigned char*>(buffer), dataSize);
 		if (entry.crc != genereatedCRC) {
-			std::cout << "File: " << File << " does not match its expected CRC, this usually means the data is corrupt" << std::endl << "Expected: " << std::hex << entry.crc << ", Recieved: " << genereatedCRC << std::endl;
+			std::cout << "File: " << File << " does not match its expected CRC, this usually means the data is corrupt" << std::endl << "Expected: " << std::hex << entry.crc << ", Recieved: " << genereatedCRC << std::dec << std::endl;
 		}
 
 		// Decompress the data if it's compressed
@@ -192,7 +191,7 @@ public:
 			*Buf = buffer;
 		}
 
-		return entry.dataSize;
+		DataSize = dataSize;
 	}
 
 	/**
