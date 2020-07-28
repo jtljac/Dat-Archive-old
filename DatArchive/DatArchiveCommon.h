@@ -13,7 +13,7 @@
 #define CHUNK 16384
 
 static const uint32_t DATFILESIGNITURE = 0xB1444154;
-static const uint8_t DATFILEVERSION = 0x01;
+static const uint8_t DATFILEVERSION = 0x02;
 
 /**
  * @file
@@ -71,9 +71,9 @@ struct DatFileEntry {
 	uint8_t fileType = 0;
 	FileFlags flags;
 	uint32_t crc = 0L;
-	uint32_t dataSize = 0;
-	uint32_t dataStart = 0;
-	uint32_t dataEnd = 0;
+	uint64_t dataSize = 0;
+	uint64_t dataStart = 0;
+	uint64_t dataEnd = 0;
 
 	/**
 	 * Gets the filetype and flags as a byte

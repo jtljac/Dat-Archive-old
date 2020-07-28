@@ -5,19 +5,19 @@ File {
 }
 
 Header {
-	u32	 	Signiture		(Expected value: 0xB1444154, ±DAT)
-	u8 		version			(Expected value: 0x1, 1)
-	u32		TableOffset
+	u32	 	Signiture			(Expected value: 0xB1444154, ±DAT)
+	u8 		version				(Expected value: 0x2, 2)
+	u64		TableOffset
 }
 
 Table {
 	u8		nameLength
-	u8		name[]			(Max 255 characters)
-	u8		fileDesc
-	u32		CRC32
-	u32		OriginalSize		(Original size of the data, before compression)
-	u32		dataStart
-	u32		dataEnd
+	u8		name[]				(Max 255 characters)
+	u8		fileDesc			
+	u32		CRC32				
+	u64		OriginalSize		(Original size of the data, before compression, always set)
+	u64		dataStart
+	u64		dataEnd
 }
 
 fileDesc is split into 2 parts, first 6 bits are the filetype identifier (giving 64 different possible filetypes), the final 2 bits are the file flags
