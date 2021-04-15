@@ -1,5 +1,7 @@
 #pragma once
-#include <Dat-Archive/DatArchive/DatArchiveCommon.h>
+#include <DatArchive/DatArchiveCommon.h>
+
+#include <utility>
 
 class DatFile {
 	std::fstream datFile;
@@ -7,13 +9,16 @@ class DatFile {
 	std::unordered_map<std::string, DatFileEntry> fileTable;
 	
 public:
-	DatFile() {}
-	DatFile(std::filesystem::path Path) {
-		openFile(Path);
+	DatFile() = default;
+
+	explicit DatFile(std::filesystem::path Path) {
+		openFile(std::move(Path));
 	}
+
 	~DatFile() {
 		fileTable.clear();
 	}
+
 	/**
 	 * Opens the given archive, builds the filetable in the process
 	 * @param TheFile The directory of the file to open
@@ -26,12 +31,11 @@ public:
 			return false;
 		}
 
-		// Read the signiture, check its the right one
-		uint32_t signiture;
-		datFile.read(reinterpret_cast<char*>(&signiture), 4);
-		signiture = _byteswap_ulong(signiture);
+		// Read the signature, check its the right one
+		char signature[4];
+		datFile.read(signature, 4);
 
-		if (signiture != DATFILESIGNITURE) {
+		if (!strcmp(signature, DATFILESIGNATURE)) {
 			return false;
 		}
 
@@ -43,10 +47,9 @@ public:
 		}
 
 		// Get the table offset
-		uint64_t tableOffset;
+		int64_t tableOffset;
 
 		datFile.read(reinterpret_cast<char*>(&tableOffset), 8);
-		tableOffset = _byteswap_ulong(tableOffset);
 
 		// Go to the table
 		datFile.seekg(tableOffset);
@@ -56,11 +59,6 @@ public:
 		std::string fileName;
 		uint8_t buffer;
 		while (datFile.read(reinterpret_cast<char*>(&buffer), 1) && !datFile.fail()) {
-			/*
-			 * Lots of byte swapping here, x86-64 is little endian, would be fine if we used char[] as they don't care for endianess
-			 * However we're using uint32_t, which does care about endianess, so we need to reverse the order of the bytes as we load them in
-			 */
-
 			char* name = new char[buffer + 1];
 
 			datFile.read(name, buffer);
@@ -80,17 +78,14 @@ public:
 
 			// CRC
 			datFile.read(reinterpret_cast<char*>(&entry.crc), 4);
-			entry.crc = _byteswap_ulong(entry.crc);
 
 			// Data Size
 			datFile.read(reinterpret_cast<char*>(&entry.dataSize), 8);
-			entry.dataSize = _byteswap_ulong(entry.dataSize);
 
 			// Set start and end points
 			datFile.read(reinterpret_cast<char*>(&entry.dataStart), 8);
-			entry.dataStart = _byteswap_ulong(entry.dataStart);
 			datFile.read(reinterpret_cast<char*>(&entry.dataEnd), 8);
-			entry.dataEnd = _byteswap_ulong(entry.dataEnd);
+
 			fileTable[fileName] = entry;
 		}
 
@@ -154,7 +149,7 @@ public:
 	 * @param Buf A pointer to a pointer to the buffer where the file data will end up
 	 * @return the size of the file
 	 */
-	std::vector<char> getFile(std::string File) {
+	std::vector<char> getFile(const std::string& File) {
 		// Check if the table actually contains the file
 		if (!fileTable.count(File)) {
 			std::cout << "Attempted to get file: " << File << ", but it doesn't exist" << std::endl;
@@ -162,7 +157,7 @@ public:
 		
 		// Get the table entry for the file, and work out where the data is
 		DatFileEntry& entry = fileTable[File];
-		uint64_t dataSize = entry.dataEnd - entry.dataStart + 1;
+		int64_t dataSize = entry.dataEnd - entry.dataStart + 1;
 
 		// Create a buffer big enough for the data
 		std::vector<char> buffer(dataSize);
@@ -172,9 +167,9 @@ public:
 		datFile.read(buffer.data(), dataSize);
 
 		// Generate and check the crc to make sure the data is valid
-		uint32_t genereatedCRC = crc32(0L, reinterpret_cast<unsigned char*>(buffer.data()), dataSize);
-		if (entry.crc != genereatedCRC) {
-			std::cout << "File: " << File << " does not match its expected CRC, this usually means the data is corrupt" << std::endl << "Expected: " << std::hex << entry.crc << ", Recieved: " << genereatedCRC << std::dec << std::endl;
+		uint32_t generatedCrc = crc32(0L, reinterpret_cast<unsigned char*>(buffer.data()), dataSize);
+		if (entry.crc != generatedCrc) {
+			std::cout << "File: " << File << " does not match its expected CRC, this usually means the data is corrupt" << std::endl << "Expected: " << std::hex << entry.crc << ", Recieved: " << generatedCrc << std::dec << std::endl;
 		}
 
 		// Decompress the data if it's compressed
@@ -199,8 +194,8 @@ public:
 		keys.reserve(fileTable.size());
 
 		// Add all the keys
-		for (std::unordered_map<std::string, DatFileEntry>::iterator key = fileTable.begin(); key != fileTable.end(); ++key) {
-			keys.push_back(key->first);
+		for (auto & key : fileTable) {
+			keys.push_back(key.first);
 		}
 
 		return keys;

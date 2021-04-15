@@ -55,3 +55,7 @@
 Keep the stuff in thirdparty
 !/ThirdParty/**
 ThirdParty/glm/glm/out/
+
+.idea/
+
+cmake-build-debug/

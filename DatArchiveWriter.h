@@ -1,13 +1,12 @@
 #pragma once
 
-#include "DatArchive/DatFileCommon.h"
-
-#include <json.hpp>
-using json = nlohmann::json;
+#include <DatArchive/DatArchiveCommon.h>
 
 class DatFileWriter {
 	std::ofstream* archiveFile = nullptr;
 	std::unordered_map<std::string, DatFileEntry> table;
+
+public:
 	/**
 	 * Creates the initial archive file
 	 * @param FilePath The path for the file to end up in
@@ -19,19 +18,18 @@ class DatFileWriter {
 		createFile(*archiveFile, FilePath, Force, true);
 
 		// Write Header
-		uint32_t bigBuffer = DATFILESIGNITURE;
-		bigBuffer = _byteswap_ulong(bigBuffer);
-		archiveFile->write(reinterpret_cast<char*>(&bigBuffer), 4);
+		archiveFile->write(DATFILESIGNATURE, 4);
 		archiveFile->write(reinterpret_cast<const char*>(&DATFILEVERSION), 1);
 
 		// Reserve header
-		char empty[4] = { 0x00, 0x00, 0x00, 0x00 };
-		archiveFile->write(empty, 4);
+		char empty[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+		archiveFile->write(empty, 8);
 
 		// Write to file
 		archiveFile->flush();
 	}
 
+private:
 	/**
 	 * Compresses the data from one file stream and deposits it in the next one
 	 * @param Source A pointer to the stream to compress
@@ -101,7 +99,7 @@ class DatFileWriter {
 				// Generate the CRC for that chunk
 				CRC = crc32(CRC, out, have);
 
-				// Write the data to th efile, work out the amount of data written by taking the point in the file after writing and subtracting the point before
+				// Write the data to the file, work out the amount of data written by taking the point in the file after writing and subtracting the point before
 				diff = Dest->tellp();
 				Dest->write(reinterpret_cast<char*>(out), have);
 				diff = ((uint32_t)Dest->tellp()) - diff;
@@ -164,17 +162,18 @@ class DatFileWriter {
 		}
 	}
 
+public:
 	/**
 	 * Writes the data of a given file into the archive, treating it how the descriptor tells us to
 	 * @param File The path to the file on the disk
 	 * @param Descriptor A json object describing the file
 	 * @return Whether the file write was a success
 	 */
-	bool writeFile(std::string File, json& Descriptor) {
+	bool writeFile(const std::string& File, FileDescriptor& Descriptor) {
 		DatFileEntry entry;
 
 		// Work out start
-		entry.dataStart = ((uint32_t)archiveFile->tellp());
+		entry.dataStart = (archiveFile->tellp());
 
 		// Open the file, return false if the file wasn't opened
 		std::ifstream theFile(File, std::ios::binary | std::ios::in);
@@ -184,9 +183,8 @@ class DatFileWriter {
 		}
 
 		// Write data
-		if (Descriptor["Compress"]) {
-			// Set the compressed flag
-			entry.flags.compressed = true;
+		if (Descriptor.compressed) {
+		    entry.flags.compressed = true;
 
 			// Return false if the file was not successfully compressed
 			if (compressFileToStream(&theFile, archiveFile, entry.crc, Z_DEFAULT_COMPRESSION) != Z_OK) {
@@ -201,16 +199,16 @@ class DatFileWriter {
 		// Get the size in bytes of the file we just added to the archive
 		theFile.clear();
 		theFile.seekg(0, std::ios::end);
-		entry.dataSize = ((uint32_t)theFile.tellg());
+		entry.dataSize = (theFile.tellg());
 
 		// We're done with the file, close it
 		theFile.close();
 
 		// Work out end
-		entry.dataEnd = ((uint32_t)archiveFile->tellp()) - 1;
+		entry.dataEnd = ((int64_t) archiveFile->tellp()) - 1;
 
 		// Add entry to table
-		table[Descriptor["DestDirectory"]] = entry;
+		table[Descriptor.destDirectory] = entry;
 		archiveFile->flush();
 
 		// Return success
@@ -222,47 +220,41 @@ class DatFileWriter {
 	 */
 	void finish() {
 		// Work out table offset
-		uint32_t tableOffset = _byteswap_ulong(archiveFile->tellp());
+		int64_t tableOffset = archiveFile->tellp();
 
-		// Create buffers
-		uint8_t buffer = 0;
-		uint32_t bigBuffer = 0;
 
+        uint8_t buffer;
 		// Add all table entries to the table
-		for (std::unordered_map<std::string, DatFileEntry>::iterator it = table.begin(); it != table.end(); ++it) {
+		for (auto & it : table) {
 			// Name Length
-			buffer = strlen(it->first.c_str());
+            buffer = strlen(it.first.c_str());
 			archiveFile->write(reinterpret_cast<char*>(&buffer), 1);
 
 			// Name
-			archiveFile->write(it->first.c_str(), buffer);
+			archiveFile->write(it.first.c_str(), buffer);
 
 			// Desc
-			buffer = it->second.getTypeAndFlags();
+			buffer = it.second.getTypeAndFlags();
 			archiveFile->write(reinterpret_cast<char*>(&buffer), 1);
 
 			// CRC
-			bigBuffer = _byteswap_ulong(it->second.crc);
-			archiveFile->write(reinterpret_cast<char*>(&bigBuffer), 4);
+			archiveFile->write(reinterpret_cast<char*>(&it.second.crc), 4);
 
 			// Data Size
-			bigBuffer = _byteswap_ulong(it->second.dataSize);
-			archiveFile->write(reinterpret_cast<char*>(&bigBuffer), 4);
+			archiveFile->write(reinterpret_cast<char*>(&it.second.dataSize), 8);
 
 			// Data Start
-			bigBuffer = _byteswap_ulong(it->second.dataStart);
-			archiveFile->write(reinterpret_cast<char*>(&bigBuffer), 4);
+			archiveFile->write(reinterpret_cast<char*>(&it.second.dataStart), 8);
 
 			// Data End
-			bigBuffer = _byteswap_ulong(it->second.dataEnd);
-			archiveFile->write(reinterpret_cast<char*>(&bigBuffer), 4);
+			archiveFile->write(reinterpret_cast<char*>(&it.second.dataEnd), 8);
 		}
 
 		// Go to the table offset
 		archiveFile->seekp(5);
 
 		// Write in the new table offset
-		archiveFile->write(reinterpret_cast<char*>(&tableOffset), 4);
+		archiveFile->write(reinterpret_cast<char*>(&tableOffset), 8);
 
 		// Write and close the file
 		archiveFile->flush();

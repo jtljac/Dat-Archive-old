@@ -4,15 +4,16 @@
 #include <bitset>
 #include <filesystem>
 #include <zlib.h>
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <assert.h>
+#include <utility>
+#include <cassert>
 
 #define CHUNK 16384
 
-static const uint32_t DATFILESIGNITURE = 0xB1444154;
+static const char DATFILESIGNATURE[4] = {'\x44', '\x41', '\x54', '\xB1'};
 static const uint8_t DATFILEVERSION = 0x02;
 
 /**
@@ -44,6 +45,16 @@ bool createFile(std::ofstream& File, std::string Path, bool Force = false, bool 
 	return true;
 }
 
+struct FileDescriptor {
+    bool compressed;
+    bool encrypted;
+    std::string destDirectory;
+
+    FileDescriptor(bool compressed, bool encrypted, std::string destDirectory) : compressed(compressed),
+                                                                                 encrypted(encrypted),
+                                                                                 destDirectory(std::move(destDirectory)) {}
+};
+
 struct FileFlags {
 	bool compressed = false;
 	bool encrypted = false;
@@ -57,13 +68,9 @@ struct FileFlags {
 		std::bitset<8> bits(FlagByte);
 
 		// Check bits
-		if (bits.test(7)) {
-			compressed = true;
-		}
+        compressed = bits.test(7);
 
-		if (bits.test(6)) {
-			encrypted = true;
-		}
+        encrypted = bits.test(6);
 	}
 };
 
@@ -71,15 +78,15 @@ struct DatFileEntry {
 	uint8_t fileType = 0;
 	FileFlags flags;
 	uint32_t crc = 0L;
-	uint64_t dataSize = 0;
-	uint64_t dataStart = 0;
-	uint64_t dataEnd = 0;
+	int64_t dataSize = 0;
+	int64_t dataStart = 0;
+	int64_t dataEnd = 0;
 
 	/**
 	 * Gets the filetype and flags as a byte
 	 * @return a byte containing the filetype and flags ready for writing to a file
 	 */
-	uint8_t getTypeAndFlags() {
+	uint8_t getTypeAndFlags() const {
 		uint8_t result = fileType;
 		// Set bits
 		if (flags.compressed) {
