@@ -3,9 +3,15 @@
 #
 cmake_minimum_required (VERSION 3.17)
 
-if (${CMAKE_CXX_STANDARD} LESS 17)
-    message(FATAL_ERROR "This library requires c++ 17 to work")
-endif()
-target_include_directories(${PROJECT_NAME} PUBLIC .)
+project(DatArchive)
 
-add_subdirectory(ZLib)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED true)
+
+add_library(DatArchive INTERFACE)
+
+target_include_directories(DatArchive INTERFACE .)
+
+add_subdirectory(ZLIB)
+
+target_link_libraries(DatArchive INTERFACE zlib)
