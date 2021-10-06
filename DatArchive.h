@@ -11,8 +11,8 @@ class DatFile {
 public:
 	DatFile() = default;
 
-	explicit DatFile(std::filesystem::path Path) {
-		openFile(std::move(Path));
+	explicit DatFile(const std::filesystem::path& Path) {
+		openFile(Path);
 	}
 
 	~DatFile() {
@@ -24,7 +24,7 @@ public:
 	 * @param TheFile The directory of the file to open
 	 * @return whether archive was successfully opened
 	 */
-	bool openFile(std::filesystem::path TheFile) {
+	bool openFile(const std::filesystem::path& TheFile) {
 		// Open file as a binary, ensure its a file
 		datFile.open(TheFile, std::ios::in | std::ios::binary);
 		if (!datFile) {
@@ -39,7 +39,7 @@ public:
 			return false;
 		}
 
-		// Get the version of the file, check its the right one
+		// Get the version of the file, check it's the right one
 		datFile.read(reinterpret_cast<char*>(&version), 1);
 
 		if (version != DATFILEVERSION) {
@@ -97,7 +97,7 @@ public:
 	 * Decompresses the first given stream into the second given stream
 	 * @param In The buffer containing the compressed data
 	 * @param Out The buffer for the uncompressed data to end up in
-	 * @return The result of the decomression (Z_OK if successful)
+	 * @return The result of the decompression (Z_OK if successful)
 	 */
 	int decompressToBuffer(char* In, uint32_t InSize, char* Out, uint32_t OutSize) {
 		// Vars
@@ -121,7 +121,7 @@ public:
 			return Z_DATA_ERROR;
 		}
 
-		// Since we're know the decompressed size, and want to keep everything in memory, we can just set the in and out to 2 buffers in memory and inflate all at once
+		// Since we know the decompressed size, and want to keep everything in memory, we can just set the in and out to 2 buffers in memory and inflate all at once
 		strm.next_in = reinterpret_cast<unsigned char*>(In);
 		strm.avail_out = OutSize;
 		strm.next_out = reinterpret_cast<unsigned char*>(Out);
@@ -188,13 +188,12 @@ public:
 	 * Returns a list of all the files inside the archive file
 	 * @return A vector containing all of the files in the archive
 	 */
-	std::vector<std::string> getFiles() {
+	std::vector<std::string> getListOfFiles() {
 		// Create the list to return, set it to the right size so we don't have to keep moving it as we add items
-		std::vector<std::string> keys;
-		keys.reserve(fileTable.size());
+		std::vector<std::string> keys(fileTable.size());
 
 		// Add all the keys
-		for (auto & key : fileTable) {
+		for (auto& key : fileTable) {
 			keys.push_back(key.first);
 		}
 

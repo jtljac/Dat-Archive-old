@@ -12,7 +12,7 @@ public:
 	 * @param FilePath The path for the file to end up in
 	 * @param force Whether to overrite the path at FilePath if it exists
 	 */
-	DatFileWriter(std::string FilePath, bool Force = true) {
+	DatFileWriter(const std::string& FilePath, bool Force = true) {
 		// Create the File
 		archiveFile = new std::ofstream;
 		createFile(*archiveFile, FilePath, Force, true);
@@ -148,7 +148,7 @@ private:
 
 		while (!Source->eof()) {
 			/*
-			 * We'd probably have enough memory for this anyway, but we'll chunk it anyway, just incase.
+			 * We'd probably have enough memory for this anyway, but we'll chunk it anyway, just in case.
 			 */
 			 // Fill buffer
 			Source->read(reinterpret_cast<char*>(buffer), CHUNK);
@@ -169,7 +169,7 @@ public:
 	 * @param Descriptor A json object describing the file
 	 * @return Whether the file write was a success
 	 */
-	bool writeFile(const std::string& File, FileDescriptor& Descriptor) {
+	bool writeFile(const std::string& File, const FileDescriptor& Descriptor) {
 		DatFileEntry entry;
 
 		// Work out start

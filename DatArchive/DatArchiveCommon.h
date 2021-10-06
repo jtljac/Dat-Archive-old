@@ -13,7 +13,7 @@
 
 #define CHUNK 16384
 
-static const char DATFILESIGNATURE[4] = {'\x44', '\x41', '\x54', '\xB1'};
+static const char DATFILESIGNATURE[4] = {'\xB1', '\x44', '\x41', '\x54'};
 static const uint8_t DATFILEVERSION = 0x02;
 
 /**
@@ -25,7 +25,7 @@ static const uint8_t DATFILEVERSION = 0x02;
  * @param Binary Whether to open the file as a binary
  * @return Whether the file was successfully created
  */
-bool createFile(std::ofstream& File, std::string Path, bool Force = false, bool Binary = false) {
+bool createFile(std::ofstream& File, const std::string& Path, bool Force = false, bool Binary = false) {
 	// Check it doesn't already exist
 	if (std::filesystem::exists(Path)) {
 		if (Force) {
@@ -86,7 +86,7 @@ struct DatFileEntry {
 	 * Gets the filetype and flags as a byte
 	 * @return a byte containing the filetype and flags ready for writing to a file
 	 */
-	uint8_t getTypeAndFlags() const {
+	[[nodiscard]] uint8_t getTypeAndFlags() const {
 		uint8_t result = fileType;
 		// Set bits
 		if (flags.compressed) {

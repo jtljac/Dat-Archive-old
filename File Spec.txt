@@ -5,7 +5,7 @@ File {
 }
 
 Header {
-	u32	 	Signiture			(Expected value: 0xB1444154, ±DAT)
+	u32	 	Signature			(Expected value: 0xB1444154, ±DAT)
 	u8 		version				(Expected value: 0x2, 2)
 	u64		TableOffset
 }
