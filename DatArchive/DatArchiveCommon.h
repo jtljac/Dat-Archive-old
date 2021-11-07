@@ -82,6 +82,14 @@ struct DatFileEntry {
 	int64_t dataStart = 0;
 	int64_t dataEnd = 0;
 
+    /**
+     * Gets the size of the file (after decompression/decryption if required
+     * @return The amount of bytes required to store the file in memory
+     */
+    [[nodiscard]] inline size_t size() const {
+        return (size_t) dataSize;
+    }
+
 	/**
 	 * Gets the filetype and flags as a byte
 	 * @return a byte containing the filetype and flags ready for writing to a file

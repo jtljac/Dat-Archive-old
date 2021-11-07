@@ -99,7 +99,7 @@ public:
 	 * @param Out The buffer for the uncompressed data to end up in
 	 * @return The result of the decompression (Z_OK if successful)
 	 */
-	int decompressToBuffer(char* In, uint32_t InSize, char* Out, uint32_t OutSize) {
+	static int decompressToBuffer(char* In, uint32_t InSize, char* Out, uint32_t OutSize) {
 		// Vars
 		int rc;
 		z_stream strm;
@@ -143,46 +143,98 @@ public:
 		return rc == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
 	}
 
+    /**
+     * Gets a file from the archive as a vector of chars
+     * @param filePath The part to the file in the archive
+     * @return A vector containing all the bytes of the file in the archive
+     */
+    std::vector<char> getFile(const std::string& filePath) {
+        if (!fileTable.count(filePath)) {
+            std::cout << "Attempted to get file: " << filePath << ", but it doesn't exist" << std::endl;
+            return {};
+        }
+        DatFileEntry& entry = fileTable[filePath];
+
+        // Create a buffer big enough for the data
+        std::vector<char> buffer(entry.size());
+
+        if (getFile(filePath, buffer.data())) return buffer;
+        else return {};
+    }
+
 	/**
 	 * Gets a file from the archive as a char array
+	 * Warning, this function assumes that the buffer is already big enough to store the file
 	 * @param File The path to the file in the archive
-	 * @param Buf A pointer to a pointer to the buffer where the file data will end up
-	 * @return the size of the file
+	 * @param buffer A pointer to a pointer to the buffer where the file data will end up (assumed to be the correct size already)
+	 * @return If the buffer was successfully filled
 	 */
-	std::vector<char> getFile(const std::string& File) {
+	bool getFile(const std::string& File, char* buffer) {
 		// Check if the table actually contains the file
 		if (!fileTable.count(File)) {
 			std::cout << "Attempted to get file: " << File << ", but it doesn't exist" << std::endl;
+            return false;
 		}
 		
 		// Get the table entry for the file, and work out where the data is
 		DatFileEntry& entry = fileTable[File];
 		int64_t dataSize = entry.dataEnd - entry.dataStart + 1;
 
-		// Create a buffer big enough for the data
-		std::vector<char> buffer(dataSize);
+        char* destBuffer;
+
+        if (entry.flags.compressed) {
+            destBuffer = new char[dataSize];
+        } else {
+            destBuffer = buffer;
+        }
 
 		// Goto and read the data
 		datFile.seekg(entry.dataStart);
-		datFile.read(buffer.data(), dataSize);
+		if (!datFile.read(destBuffer, dataSize).good()) {
+            if (entry.flags.compressed) delete[] destBuffer;
+            return false;
+        }
 
 		// Generate and check the crc to make sure the data is valid
-		uint32_t generatedCrc = crc32(0L, reinterpret_cast<unsigned char*>(buffer.data()), dataSize);
+		uint32_t generatedCrc = crc32(0L, reinterpret_cast<unsigned char*>(destBuffer), dataSize);
 		if (entry.crc != generatedCrc) {
-			std::cout << "File: " << File << " does not match its expected CRC, this usually means the data is corrupt" << std::endl << "Expected: " << std::hex << entry.crc << ", Recieved: " << generatedCrc << std::dec << std::endl;
-		}
+			std::cout << "File: " << File << " does not match its expected CRC, this usually means the data is corrupt" << std::endl << "Expected: " << std::hex << entry.crc << ", Received: " << generatedCrc << std::dec << std::endl;
+        }
 
 		// Decompress the data if it's compressed
 		if (entry.flags.compressed) {
-			std::vector<char> data(entry.dataSize);
-			decompressToBuffer(buffer.data(), dataSize, data.data(), entry.dataSize);
+			decompressToBuffer(destBuffer, dataSize, buffer, entry.dataSize);
+            delete[] destBuffer;
+		}
 
-			return data;
-		}
-		else {
-			return buffer;
-		}
+        return true;
 	}
+
+    /**
+     * Gets the header for the file at the address
+     * @param filePath
+     * @return
+     */
+    [[nodiscard]] const DatFileEntry& getFileHeader(const std::string& filePath) {
+        return fileTable[filePath];
+    }
+
+    /**
+     * Checks if the archive file contains a file at the given path
+     * @param filePath The path to the file to check in the archive
+     * @return If the archive file contains a file at the filePath
+     */
+    [[nodiscard]] bool contains(const std::string& filePath) const {
+        return fileTable.count(filePath) != 0;
+    }
+
+    /**
+     * Returns the amount of fules stored inside the archive file
+     * @return The amount of files stored inside the archive file
+     */
+    [[nodiscard]] size_t size() const {
+        return fileTable.size();
+    }
 
 	/**
 	 * Returns a list of all the files inside the archive file
