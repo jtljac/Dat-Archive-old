@@ -12,6 +12,6 @@ add_library(DatArchive INTERFACE)
 
 target_include_directories(DatArchive INTERFACE .)
 
-add_subdirectory(ZLIB)
+add_subdirectory(ZLib)
 
 target_link_libraries(DatArchive INTERFACE zlib)
